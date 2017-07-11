@@ -1,0 +1,7 @@
+#Comments start with #
+#Natasaha Serial Port Location, if not using leave blank line
+
+#Susannah Serial Port Location, if not using leave blank line
+COM3
+#remote writing location
+C:\\Users\\Administrator\\Dropbox\\vaisala\\
