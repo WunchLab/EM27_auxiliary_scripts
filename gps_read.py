@@ -15,9 +15,8 @@ utc = pytz.timezone("utc")
 
 
 #TODO use gpgrms for date
-date = dt.datetime.now(utc).strftime("%Y/%m/%d")
-
 now = dt.datetime.now().strftime("%Y%m%d")
+
 base_name = now + "_" + "GPS_"
 file_number = 0
 for file in os.listdir():
@@ -33,10 +32,12 @@ log_file.write(header)
 
 
 def gps_read():
-    gps_ser = serial.Serial("COM4", baudrate=4800, timeout=1)
+    gps_ser = serial.Serial("COM10", baudrate=4800, timeout=1)
 #    data_dict = {"GPGGA": [], "GPRMC": [], "GPGSA": [], "GPGSV": []}
     while True:
         gps = str(gps_ser.readline())[2:-5].split(",")
+        date = dt.datetime.now(utc).strftime("%Y/%m/%d")
+
 #        data_dict[sentence[0]].append(sentence[1:])
         if gps[0] == "$GPGGA":
             lat = str(gps[2])
