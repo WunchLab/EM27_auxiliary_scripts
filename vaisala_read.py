@@ -9,22 +9,33 @@ import serial
 import datetime as dt
 import numpy as np
 import threading
+import os.listdir
+
+
+def check_if_file_exists(base_name):
+    file_number = 0
+    for file in os.listdir():
+        if file == base_name + "_" + str(file_number).zfill(2) + ".txt":
+            file_number = file_number + 1
+            file_number = str(file_number).zfill(2)
+    return base_name + file_number + ".txt"
 
 
 def create_log_file(id_num=""):
     """this fucntions creates the logging files, one goes to the local
        directory and the other
        goes to Nasrin's dropbox. Name format is
-       Vaisalaname_vaisala_data_YYYY-MM-DD.txt
+       Vaisalaname_vaisala_data_YYYY-MM-DD_00.txt
     """
     global local_file, remote_file
     date = dt.datetime.now()
     year = str(date.year)
     month = str(date.month)
     day = str(date.day)
-    file_name = (str(id_num) + "_vaisala" + "_data" + "_" +
-                 year + month + day + ".txt"
+    base_name = (str(id_num) + "_vaisala" + "_data" + "_" +
+                 year + month + day + "_"
                  )
+    file_name = check_if_file_exists(base_name)
     local_file = open(file_name, mode="a")
     remote_file = open(infile[2] + file_name, mode="a")
     header = ("Time, wdmin(D), wdavg(D), wdmax(D), wsmin(ms-1), " +
@@ -93,6 +104,8 @@ def interprate_vaisala_string(ser, log_file, id_num):
             """if data lst has any data in it we write to the local
                and remote files and save them
             """
+
+
 def main():
     """open daemons based on number of vaisala's found"""
     global infile

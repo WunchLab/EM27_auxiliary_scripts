@@ -53,15 +53,19 @@ def gps_read():
             except ValueError:
                 time, lat, lon, alt = (np.nan, np.nan, np.nan, np.nan)
             data_str = [time, lat, lon, alt]
-            write_str = date + ", " + str(data_str)[1:-1] + ", " + str(dt.datetime.now()) + "\n"
+            write_str = (date + ", " + str(data_str)[1:-1] + ", " +
+                         str(dt.datetime.now()) + "\n"
+                         )
             print(write_str)
             log_file.write(write_str)
             log_file.flush()
     log_file.close()
 
 
-def main():
-    gps_read()
+def gps_daemon():
+    t1 = threading.Thread(target=gps_read)
+    t1.setDaemon(True)
+    t1.start()
 
 if __name__ == "__main__":
-    main()
+    gps_daemon()
