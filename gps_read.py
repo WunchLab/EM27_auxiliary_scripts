@@ -11,6 +11,7 @@ import os
 import numpy as np
 import pytz
 import threading
+import time
 utc = pytz.timezone("utc")
 
 
@@ -20,21 +21,20 @@ now = dt.datetime.now().strftime("%Y%m%d")
 base_name = now + "_" + "GPS_"
 file_number = 0
 for file in os.listdir():
-    print(file)
     if file == base_name + str(file_number).zfill(2):
         file_number = file_number + 1
 file_number = str(file_number).zfill(2)
 
 header = "GPSUTCDate, GPSUTCTime, Lat, Long, masl, CompTime\n"
 log_file = open("./" + base_name + file_number, mode="w")
-print(log_file)
 log_file.write(header)
 
 
 def gps_read():
+    global stop_event
     gps_ser = serial.Serial("COM10", baudrate=4800, timeout=1)
 #    data_dict = {"GPGGA": [], "GPRMC": [], "GPGSA": [], "GPGSV": []}
-    while True:
+    while not stop_event.is_set():
         gps = str(gps_ser.readline())[2:-5].split(",")
         date = dt.datetime.now(utc).strftime("%Y/%m/%d")
 
@@ -60,12 +60,20 @@ def gps_read():
             log_file.write(write_str)
             log_file.flush()
     log_file.close()
+    gps_ser.close()
 
 
 def gps_daemon():
+    global stop_event
+    stop_event = threading.Event()
     t1 = threading.Thread(target=gps_read)
     t1.setDaemon(True)
     t1.start()
 
+
+def stop():
+    stop_event.set()
+    time.sleep(1)
+    exit()
 if __name__ == "__main__":
     gps_daemon()

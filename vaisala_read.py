@@ -8,6 +8,7 @@ Created on Tue Jun  6 11:41:41 2017
 import serial
 import datetime as dt
 import numpy as np
+import time
 import threading
 import os
 
@@ -58,10 +59,11 @@ def create_log_file(id_num=""):
 
 
 def interprate_vaisala_string(ser, log_file, id_num):
+    global stop
     data_dict = {"R1": slice(1, 7), "R2": slice(7, 10), "R3": slice(10, 18),
                  "R4": slice(18, 22), "R5": slice(22, None)
                  }
-    while True:
+    while not stop_event.is_set():
         """this loop reads the data from the vaisala and assocaites it with its
            correct postiion using data dict and fills in approiate nans
            in data lst
@@ -104,11 +106,13 @@ def interprate_vaisala_string(ser, log_file, id_num):
             """if data lst has any data in it we write to the local
                and remote files and save them
             """
+    local_file.close()
+    remote_file.close()
 
 
 def main():
     """open daemons based on number of vaisala's found"""
-    global infile
+    global infile, stop_event
     infile = [l.rsplit() for l in open("vaisala_infile", mode="r").readlines()
               if l[0] != "#"
               ]
@@ -123,6 +127,7 @@ def main():
     infile = infile2
     """above processes infile and handles missing lines"""
     loc_nat, loc_sue = (infile[0], infile[1])
+    stop_event = threading.Event()
     if (loc_nat != "" and loc_sue != ""):
         print("Both Vaisalas connected")
         """define first raeading thread"""
@@ -170,6 +175,12 @@ def main():
     else:
         print("No Vaisalas are connected")
         return
+
+
+def stop():
+    stop_event.set()
+    time.sleep(1)
+    exit()
 
 if __name__ == "__main__":
     main()
