@@ -9,15 +9,15 @@ import serial
 import datetime as dt
 import numpy as np
 import threading
-import os.listdir
+import os
 
 
 def check_if_file_exists(base_name):
     file_number = 0
     for file in os.listdir():
-        if file == base_name + "_" + str(file_number).zfill(2) + ".txt":
+        if file == base_name + str(file_number).zfill(2) + ".txt":
             file_number = file_number + 1
-            file_number = str(file_number).zfill(2)
+    file_number = str(file_number).zfill(2)
     return base_name + file_number + ".txt"
 
 
