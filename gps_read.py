@@ -27,6 +27,7 @@ file_number = str(file_number).zfill(2)
 
 header = "GPSUTCDate, GPSUTCTime, Lat, Long, masl, CompTime\n"
 log_file = open("./" + base_name + file_number, mode="w")
+
 log_file.write(header)
 """remove these if not working """
 gps_infile = open("./gps_infile", mode="r").readlines()
