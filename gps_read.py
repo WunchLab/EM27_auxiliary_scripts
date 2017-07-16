@@ -61,7 +61,7 @@ def gps_read():
             write_str = (date + ", " + str(data_str[0]) + ", " + str(data_str[1:])[1:-1] + ", " +
                          str(dt.datetime.now()) + "\n"
                          )
-            print("GPS Fix Data " + write_str)
+            print("GPS Fix Data: \n " + write_str)
             log_file.write(write_str)
             log_file.flush()
     log_file.close()
