@@ -28,11 +28,15 @@ file_number = str(file_number).zfill(2)
 header = "GPSUTCDate, GPSUTCTime, Lat, Long, masl, CompTime\n"
 log_file = open("./" + base_name + file_number, mode="w")
 log_file.write(header)
+"""remove these if not working """
+gps_infile = open("./gps_infile", mode="r").readlines()
+gps_infile = [x for x in gps_infile if x[0] != "#"]
+loc_gps = gps_infile[0]
 
 
 def gps_read():
-    global stop_event
-    gps_ser = serial.Serial("COM10", baudrate=4800, timeout=1)
+    global stop_event, loc_gps
+    gps_ser = serial.Serial(loc_gps, baudrate=4800, timeout=1)
 #    data_dict = {"GPGGA": [], "GPRMC": [], "GPGSA": [], "GPGSV": []}
     while not stop_event.is_set():
         gps = str(gps_ser.readline())[2:-5].split(",")
