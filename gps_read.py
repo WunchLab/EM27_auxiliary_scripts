@@ -41,7 +41,7 @@ def gps_read():
 #        data_dict[sentence[0]].append(sentence[1:])
         if gps[0] == "$GPGGA":
             lat = str(gps[2])
-            time = float(gps[1])
+            time = (gps[1])
             try:
                 lat = float(lat[0:2]) + float(lat[2:])/60.
                 lon = str(gps[4])
@@ -53,10 +53,10 @@ def gps_read():
             except ValueError:
                 time, lat, lon, alt = (np.nan, np.nan, np.nan, np.nan)
             data_str = [time, lat, lon, alt]
-            write_str = (date + ", " + str(data_str)[1:-1] + ", " +
+            write_str = (date + ", " + str(data_str[0]) + ", " + str(data_str[1:])[1:-1] + ", " +
                          str(dt.datetime.now()) + "\n"
                          )
-            print(write_str)
+            print("GPS Fix Data " + write_str)
             log_file.write(write_str)
             log_file.flush()
     log_file.close()
