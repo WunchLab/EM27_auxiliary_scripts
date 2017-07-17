@@ -29,7 +29,7 @@ def check_if_file_exists(base_name):
 
 def create_log_file(id_num=""):
     global local_file, raw_data, header, base_name
-    base_name = (dt.date.toady().strftime("%Y%m%d") + "_" + str(id_num))
+    base_name = (dt.date.today().strftime("%Y%m%d") + "_" + str(id_num))
     raw_data = open(base_name + "_raw_strings.txt", mode="a")
     header = ("UTCDate,UTCTime,wdmin(D),wdavg(D),wdmax(D),wsmin(ms-1)," +
               "wsavg(ms-1)," +
