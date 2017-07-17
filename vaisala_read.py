@@ -38,10 +38,10 @@ def create_log_file(id_num=""):
     header = ("UTCDate,UTCTime,wdmin(D),wdavg(D),wdmax(D),wsmin(ms-1)," +
               "wsavg(ms-1)," +
               "wsmax(ms-1),Tout,RH,Pout,rainaccum(mm)," +
-              "raindur(s),rainintensity(mm/h),hailaccum(hits/cm2), " +
-              "haildur(s),hailintensity(hits/cm2/h)," +
-              "rainpkintensity(mm/h)," +
-              "hailpkintensiy(hits/cm2)" + "\n"
+              "raindur(s),rainintensity(mmh-1),hailaccum(hitscm-2), " +
+              "haildur(s),hailintensity(hitscm-2h-1)," +
+              "rainpkintensity(mmh-1)," +
+              "hailpkintensiy(hitscm-2)" + "\n"
               )
     try:
         local_file_header = open(base_name + ".txt", mode="r").readlines()[0]
