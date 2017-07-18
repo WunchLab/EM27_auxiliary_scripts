@@ -12,6 +12,7 @@ import threading
 import os
 import pytz
 import time
+import pandas as pd
 utc = pytz.timezone("utc")
 
 """can be used to write to a differnt file whenever weather station reader is turned on
@@ -83,9 +84,9 @@ def interprate_vaisala_string(ser, log_file, id_num):
       
         if key != (""):
             data = [var[3:-1] for var in sentence[1:]]
-            if key == "R2":
-                r2_ffill = data
-            data_lst[data_dict["R2"]] = r2_ffill
+          #  if key == "R2":
+           #     r2_ffill = data
+            #data_lst[data_dict["R2"]] = r2_ffill
             """removes units from end of varaibbles"""
             data_lst[0] = measurement_date
             data_lst[1] = measurement_time
@@ -104,8 +105,8 @@ def interprate_vaisala_string(ser, log_file, id_num):
             """if no data in string don't write to file
                and print something saying no data
             """
-        if r2_ffill == [np.nan]*3:
-            continue
+        #if r2_ffill == [np.nan]*3:
+         #   continue
         else:
             if len(data_lst) == 19:
                 print(str(id_num) + " " + " data: \n" + data_str)
@@ -115,9 +116,26 @@ def interprate_vaisala_string(ser, log_file, id_num):
             """if data lst has any data in it we write to the local
                and remote files and save them
             """
+    print("Closing open serial ports and files")
     local_file.close()
     raw_data.close()
     ser.close()
+    print("Interpolating and filling Tout, Pout and RH")
+
+    data = pd.read_csv(base_name + ".txt")
+    data["dt"] = [Date + Time for Date, Time in zip(data["UTCDate"], data["UTCTime"])]
+    data["dt"] = pd.to_datetime(data["dt"], format="%Y/%m/%d%H:%M:%S.%f")
+    data.index = data["dt"]
+    del data["dt"]
+    data["Tout"] = data["Tout"].interpolate("time").fillna(method="ffill").fillna(method="bfill")
+    data["Pout"] = data["Pout"].interpolate("time").fillna(method="ffill").fillna(method="bfill")
+    data["RH"] = data["RH"].interpolate("time").fillna(method="ffill").fillna(method="bfill")
+
+    data.index = data["UTCDate"]
+    del data["UTCDate"]
+    data.to_csv("base_name" + ".txt", float_format="%.1f", na_rep="nan")
+    print("Exiting")
+    exit()                 
     return
 
 def main():
@@ -189,8 +207,7 @@ def main():
 
 def stop():
     stop_event.set()
-    time.sleep(1)
-    exit()
+
 
 
 if __name__ == "__main__":
