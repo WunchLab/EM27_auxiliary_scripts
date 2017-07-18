@@ -56,13 +56,17 @@ def interprate_vaisala_string(ser, log_file, id_num):
     data_dict = {"R1": slice(2, 8), "R2": slice(8, 11),
                  "R3": slice(11, 19)
                  }
+    r2_ffill = [np.nan] * 3
     while not stop_event.is_set():
         """this loop reads the data from the vaisala and assocaites it with its
            correct postiion using data dict and fills in approiate nans
            in data lst
         """
+        
         data_lst = [np.nan] * 19
         x = str(ser.readline())[3:-3]
+        
+
         sentence = x[:-2].split(",")
         """these read from the serial port and remove the ''b' at the start of
            the byte string and removes the \r\n at the end of it
@@ -76,8 +80,12 @@ def interprate_vaisala_string(ser, log_file, id_num):
         """assocaite a tme with the measurement"""
         key = sentence[0]
         """key is used to find correct nans to rewrite using data dict"""
+      
         if key != (""):
             data = [var[3:-1] for var in sentence[1:]]
+            if key == "R2":
+                r2_ffill = data
+            data_lst[data_dict["R2"]] = r2_ffill
             """removes units from end of varaibbles"""
             data_lst[0] = measurement_date
             data_lst[1] = measurement_time
@@ -96,6 +104,8 @@ def interprate_vaisala_string(ser, log_file, id_num):
             """if no data in string don't write to file
                and print something saying no data
             """
+        if r2_ffill == [np.nan]*3:
+            continue
         else:
             if len(data_lst) == 19:
                 print(str(id_num) + " " + " data: \n" + data_str)
