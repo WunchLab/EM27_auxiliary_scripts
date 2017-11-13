@@ -30,7 +30,8 @@ def check_if_file_exists(base_name):
 
 def create_log_file(id_num=""):
     global local_file, raw_data, header, base_name
-    base_name = (dt.date.today().strftime("%Y%m%d") + "_" + str(id_num))
+    out_dir = 'C:/Users/Administrator/Desktop/em-27_aux_scripts/75_met//' #output directory for files J
+    base_name = (out_dir + dt.date.today().strftime("%Y%m%d") + "_" + str(id_num)) #full base filename J
     raw_data = open(base_name + "_raw_strings.txt", mode="a")
     header = ("UTCDate,UTCTime,wdmin(D),wdavg(D),wdmax(D),wsmin(ms-1)," +
               "wsavg(ms-1)," +
@@ -133,10 +134,10 @@ def interprate_vaisala_string(ser, log_file, id_num):
 
     data.index = data["UTCDate"]
     del data["UTCDate"]
-    data.to_csv("base_name" + ".txt", float_format="%.1f", na_rep="nan")
+    data.to_csv(base_name + "2.txt", float_format="%.1f", na_rep="nan")
     print("Exiting")
     exit()                 
-    return
+
 
 def main():
     """open daemons based on number of vaisala's found"""
@@ -211,4 +212,7 @@ def stop():
 
 
 if __name__ == "__main__":
+    print("Please unsure you exit the reader using the stop() function." +
+          " This runs the post-processing required for the data to be read into EGI"
+          )
     main()
