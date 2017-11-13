@@ -18,7 +18,8 @@ utc = pytz.timezone("utc")
 #TODO use gpgrms for date
 now = dt.datetime.now().strftime("%Y%m%d")
 
-base_name = now + "_" + "GPS_"
+out_dir = 'C:/Users/Administrator/Desktop/em-27_aux_scripts/75_gps/' #output directory for files J
+base_name = out_dir + now + "_" + "GPS_" #initial filename + directory J
 file_number = 0
 for file in os.listdir():
     if file == base_name + str(file_number).zfill(2):
@@ -26,7 +27,7 @@ for file in os.listdir():
 file_number = str(file_number).zfill(2)
 
 header = "GPSUTCDate, GPSUTCTime, Lat, Long, masl, CompTime\n"
-log_file = open("./" + base_name + file_number, mode="w")
+log_file = open(base_name + file_number, mode="w") #open file for writing J
 
 log_file.write(header)
 """remove these if not working """
