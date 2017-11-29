@@ -18,15 +18,16 @@ utc = pytz.timezone("utc")
 #TODO use gpgrms for date
 now = dt.datetime.now().strftime("%Y%m%d")
 
-base_name = now + "_" + "GPS_"
+out_dir = 'C:/Users/Administrator/Desktop/em-27_aux_scripts/76_gps/' #output directory for files J
+base_name = out_dir + now + "_" + "GPS_tb_" #initial filename + directory J
 file_number = 0
-for file in os.listdir():
-    if file == base_name + str(file_number).zfill(2):
+for file in os.listdir(out_dir):
+    if file == now + "_" + "GPS_tb_" + str(file_number).zfill(2)+".txt":
         file_number = file_number + 1
 file_number = str(file_number).zfill(2)
 
-header = "GPSUTCDate, GPSUTCTime, Lat, Long, masl, CompTime\n"
-log_file = open("./" + base_name + file_number, mode="w")
+header = "GPSUTCDate, GPSUTCTime, Lat, Long, masl, CompDate, CompTime\n"
+log_file = open(base_name + file_number+".txt", mode="w") #open file for writing J
 
 log_file.write(header)
 """remove these if not working """
@@ -48,10 +49,12 @@ def gps_read():
             lat = str(gps[2])
             time = (gps[1])
             try:
+                time = str(int(float(time[0:2]))).zfill(2)+":"+str(int(float(time[2:4]))).zfill(2)+":"+str(int(float(time[4:6]))).zfill(2)
                 lat = float(lat[0:2]) + float(lat[2:])/60.
                 lon = str(gps[4])
                 lon = -float(lon[0:3]) - float(lon[3:])/60.
-                alt = float(gps[9])
+                alt = float(gps[9])		
+
             except KeyboardInterrupt:
                 log_file.close()
                 raise
@@ -59,7 +62,7 @@ def gps_read():
                 time, lat, lon, alt = (np.nan, np.nan, np.nan, np.nan)
             data_str = [time, lat, lon, alt]
             write_str = (date + ", " + str(data_str[0]) + ", " + str(data_str[1:])[1:-1] + ", " +
-                         str(dt.datetime.now()) + "\n"
+                         str(dt.datetime.now().strftime("%Y/%m/%d"))  + ", " + str(dt.datetime.now().strftime("%H:%M:%S")) + "\n"
                          )
             print("GPS Fix Data: \n " + write_str)
             log_file.write(write_str)
