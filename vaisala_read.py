@@ -12,6 +12,7 @@ import threading
 import os
 import pytz
 import time
+import pandas as pd
 utc = pytz.timezone("utc")
 
 """can be used to write to a differnt file whenever weather station reader is turned on
@@ -29,15 +30,10 @@ def check_if_file_exists(base_name):
 
 def create_log_file(id_num=""):
     global local_file, raw_data, header, base_name
-    base_name = (dt.date.today().strftime("%Y%m%d") + "_" + str(id_num))
+    out_dir = 'C:/Users/Administrator/Desktop/em-27_aux_scripts/76_met//' #output directory for files J
+    base_name = (out_dir + dt.date.today().strftime("%Y%m%d") + "_" + str(id_num)) #full base filename J
     raw_data = open(base_name + "_raw_strings.txt", mode="a")
-    header = ("UTCDate,UTCTime,wdmin(D),wdavg(D),wdmax(D),wsmin(ms-1)," +
-              "wsavg(ms-1)," +
-              "wsmax(ms-1),Tout,RH,Pout,rainaccum(mm)," +
-              "raindur(s),rainintensity(mmh-1),hailaccum(hitscm-2), " +
-              "haildur(s),hailintensity(hitscm-2h-1)," +
-              "rainpkintensity(mmh-1)," +
-              "hailpkintensiy(hitscm-2)" + "\n"
+    header = ("UTCDate,UTCTime,WSPD,WDIR,Tout,RH,Pout,rainaccum,rainintensity,hailaccum,hailintensityd, ID" +"\n"
               )
     try:
         local_file_header = open(base_name + ".txt", mode="r").readlines()[0]
@@ -53,16 +49,16 @@ def create_log_file(id_num=""):
 
 def interprate_vaisala_string(ser, log_file, id_num):
     global stop_event, base_name
-    data_dict = {"R1": slice(2, 8), "R2": slice(8, 11),
-                 "R3": slice(11, 19)
-                 }
     while not stop_event.is_set():
         """this loop reads the data from the vaisala and assocaites it with its
            correct postiion using data dict and fills in approiate nans
            in data lst
         """
-        data_lst = [np.nan] * 19
+        
+        data_lst = [np.nan] * 12
         x = str(ser.readline())[3:-3]
+        
+
         sentence = x[:-2].split(",")
         """these read from the serial port and remove the ''b' at the start of
            the byte string and removes the \r\n at the end of it
@@ -74,21 +70,19 @@ def interprate_vaisala_string(ser, log_file, id_num):
         measurement_time = measurement_datetime.strftime("%H:%M:%S.%f")
         measurement_date = measurement_datetime.strftime("%Y/%m/%d")
         """assocaite a tme with the measurement"""
-        key = sentence[0]
         """key is used to find correct nans to rewrite using data dict"""
-        if key != (""):
-            data = [var[3:-1] for var in sentence[1:]]
-            """removes units from end of varaibbles"""
-            data_lst[0] = measurement_date
-            data_lst[1] = measurement_time
-            """insert measurement time"""
-            try:
-                data_lst[data_dict[key]] = data
-            except KeyboardInterrupt:
-                raise
-            except:
-                continue
-            """rewrite datalst"""
+        data = [var[3:-1] for var in sentence[1:]]
+        """removes units from end of varaibbles"""
+        data_lst[0] = measurement_date
+        data_lst[1] = measurement_time
+        """insert measurement time"""
+        try:
+          data_lst[2:12] = data
+        except KeyboardInterrupt:
+            raise
+        except:
+            continue
+        """rewrite datalst"""
         data_str = str(data_lst)[1:-1] + "\n"
         data_str = "%s" % ",".join(map(str, data_lst)) + "\n"
         if all(v is np.nan for v in data_lst):
@@ -96,8 +90,10 @@ def interprate_vaisala_string(ser, log_file, id_num):
             """if no data in string don't write to file
                and print something saying no data
             """
+        #if r2_ffill == [np.nan]*3:
+         #   continue
         else:
-            if len(data_lst) == 19:
+            if len(data_lst) == 12:
                 print(str(id_num) + " " + " data: \n" + data_str)
                 local_file.write(data_str)
                 local_file.flush()
@@ -105,10 +101,29 @@ def interprate_vaisala_string(ser, log_file, id_num):
             """if data lst has any data in it we write to the local
                and remote files and save them
             """
+    print("Closing open serial ports and files")
+    print(data)
     local_file.close()
     raw_data.close()
     ser.close()
-    return
+    print("Interpolating and filling Tout, Pout and RH")
+
+    data = pd.read_csv(base_name + ".txt")
+    data["dt"] = [Date + Time for Date, Time in zip(data["UTCDate"], data["UTCTime"])]
+    data["dt"] = pd.to_datetime(data["dt"], format="%Y/%m/%d%H:%M:%S.%f")
+    data.index = data["dt"]
+    del data["dt"]
+    data["Tout"] = data["Tout"].interpolate("time").fillna(method="ffill").fillna(method="bfill")
+    data["Pout"] = data["Pout"].interpolate("time").fillna(method="ffill").fillna(method="bfill")
+    data["RH"] = data["RH"].interpolate("time").fillna(method="ffill").fillna(method="bfill")
+
+    data.index = data["UTCDate"]
+    del data["UTCDate"]
+    data.to_csv(base_name + "2.txt", float_format="%.1f", na_rep="nan")
+    print("Exiting")
+    exit()                 
+
+
 
 def main():
     """open daemons based on number of vaisala's found"""
@@ -179,9 +194,11 @@ def main():
 
 def stop():
     stop_event.set()
-    time.sleep(1)
-    exit()
+
 
 
 if __name__ == "__main__":
+    print("Please unsure you exit the reader using the stop() function." +
+          " This runs the post-processing required for the data to be read into EGI"
+          )
     main()
