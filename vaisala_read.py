@@ -14,6 +14,7 @@ import pytz
 import time
 import pandas as pd
 utc = pytz.timezone("utc")
+from serial.tools import list_ports
 
 """can be used to write to a differnt file whenever weather station reader is turned on
 
@@ -33,7 +34,7 @@ def create_log_file(id_num=""):
     out_dir = 'C:/Users/Administrator/Desktop/em-27_aux_scripts/76_met//' #output directory for files J
     base_name = (out_dir + dt.date.today().strftime("%Y%m%d") + "_" + str(id_num)) #full base filename J
     raw_data = open(base_name + "_raw_strings.txt", mode="a")
-    header = ("UTCDate,UTCTime,WSPD,WDIR,Tout,RH,Pout,rainaccum,rainintensity,hailaccum,hailintensityd, ID" +"\n"
+    header = ("UTCDate,UTCTime,WDIR,WSPD,Tout,RH,Pout,rainaccum,rainintensity,hailaccum,hailintensityd, ID" +"\n"
               )
     try:
         local_file_header = open(base_name + ".txt", mode="r").readlines()[0]
@@ -142,7 +143,14 @@ def main():
     infile = infile2
     stop_event = threading.Event()
     """above processes infile and handles missing lines"""
-    loc_nat, loc_sue = (infile[0], infile[1])
+    try:
+        vaisala = list(list_ports.grep("Vaisala*"))
+    except StopIteration:
+        print ("No device found")
+    loc_nat = vaisala[0][0]
+    loc_sue = infile[1]
+    print("Main Vaisala COM port is", loc_nat)
+    print("Manual COM port set for second Vaisala is",loc_sue)
     if (loc_nat != "" and loc_sue != ""):
         print("Both Vaisalas connected")
         """define first raeading thread"""
@@ -166,7 +174,7 @@ def main():
         t1.start()
         t2.start()
     elif (loc_nat != "" and loc_sue == ""):
-        print("75_sus not connected log for only 76_nat only")
+        print("This computer should be connected to instrument #76. The Vaisala that goes with it  should show 7676 in the last string")
 
         def vais1():
             ser1 = serial.Serial(loc_nat, baudrate=19200, timeout=1)
@@ -198,7 +206,7 @@ def stop():
 
 
 if __name__ == "__main__":
-    print("Please unsure you exit the reader using the stop() function." +
+    print("Please ensure you exit the reader using the exit() function." +
           " This runs the post-processing required for the data to be read into EGI"
           )
     main()
