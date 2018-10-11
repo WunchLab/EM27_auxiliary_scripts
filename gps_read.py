@@ -13,6 +13,7 @@ import pytz
 import threading
 import time
 utc = pytz.timezone("utc")
+from serial.tools import list_ports
 
 
 #TODO use gpgrms for date
@@ -31,10 +32,12 @@ log_file = open(base_name + file_number+".txt", mode="w") #open file for writing
 
 log_file.write(header)
 """remove these if not working """
-gps_infile = open("./gps_infile", mode="r").readlines()
-gps_infile = [x for x in gps_infile if x[0] != "#"]
-loc_gps = gps_infile[0]
-
+try:
+    gps_port = list(list_ports.grep("Prolific*"))
+except StopIteration:
+      print ("No device found")
+loc_gps  = gps_port[0][0]
+print("The GPS COM port is", loc_gps)
 
 def gps_read():
     global stop_event, loc_gps
