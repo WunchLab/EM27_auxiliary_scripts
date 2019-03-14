@@ -14,6 +14,7 @@ import pytz
 import time
 import pandas as pd
 utc = pytz.timezone("utc")
+from serial.tools import list_ports
 
 """can be used to write to a differnt file whenever weather station reader is turned on
 
@@ -33,13 +34,7 @@ def create_log_file(id_num=""):
     out_dir = 'C:/Users/Administrator/Desktop/em-27_aux_scripts/75_met//' #output directory for files J
     base_name = (out_dir + dt.date.today().strftime("%Y%m%d") + "_" + str(id_num)) #full base filename J
     raw_data = open(base_name + "_raw_strings.txt", mode="a")
-    header = ("UTCDate,UTCTime,wdmin(D),wdavg(D),wdmax(D),wsmin(ms-1)," +
-              "wsavg(ms-1)," +
-              "wsmax(ms-1),Tout,RH,Pout,rainaccum(mm)," +
-              "raindur(s),rainintensity(mmh-1),hailaccum(hitscm-2), " +
-              "haildur(s),hailintensity(hitscm-2h-1)," +
-              "rainpkintensity(mmh-1)," +
-              "hailpkintensiy(hitscm-2)" + "\n"
+    header = ("UTCDate,UTCTime,WDIR,WSPD,Tout,RH,Pout,rainaccum,rainintensity,hailaccum,hailintensityd, ID" +"\n"
               )
     try:
         local_file_header = open(base_name + ".txt", mode="r").readlines()[0]
@@ -55,17 +50,13 @@ def create_log_file(id_num=""):
 
 def interprate_vaisala_string(ser, log_file, id_num):
     global stop_event, base_name
-    data_dict = {"R1": slice(2, 8), "R2": slice(8, 11),
-                 "R3": slice(11, 19)
-                 }
-    r2_ffill = [np.nan] * 3
     while not stop_event.is_set():
         """this loop reads the data from the vaisala and assocaites it with its
            correct postiion using data dict and fills in approiate nans
            in data lst
         """
         
-        data_lst = [np.nan] * 19
+        data_lst = [np.nan] * 12
         x = str(ser.readline())[3:-3]
         
 
@@ -80,25 +71,19 @@ def interprate_vaisala_string(ser, log_file, id_num):
         measurement_time = measurement_datetime.strftime("%H:%M:%S.%f")
         measurement_date = measurement_datetime.strftime("%Y/%m/%d")
         """assocaite a tme with the measurement"""
-        key = sentence[0]
         """key is used to find correct nans to rewrite using data dict"""
-      
-        if key != (""):
-            data = [var[3:-1] for var in sentence[1:]]
-          #  if key == "R2":
-           #     r2_ffill = data
-            #data_lst[data_dict["R2"]] = r2_ffill
-            """removes units from end of varaibbles"""
-            data_lst[0] = measurement_date
-            data_lst[1] = measurement_time
-            """insert measurement time"""
-            try:
-                data_lst[data_dict[key]] = data
-            except KeyboardInterrupt:
-                raise
-            except:
-                continue
-            """rewrite datalst"""
+        data = [var[3:-1] for var in sentence[1:]]
+        """removes units from end of varaibbles"""
+        data_lst[0] = measurement_date
+        data_lst[1] = measurement_time
+        """insert measurement time"""
+        try:
+          data_lst[2:12] = data
+        except KeyboardInterrupt:
+            raise
+        except:
+            continue
+        """rewrite datalst"""
         data_str = str(data_lst)[1:-1] + "\n"
         data_str = "%s" % ",".join(map(str, data_lst)) + "\n"
         if all(v is np.nan for v in data_lst):
@@ -109,7 +94,7 @@ def interprate_vaisala_string(ser, log_file, id_num):
         #if r2_ffill == [np.nan]*3:
          #   continue
         else:
-            if len(data_lst) == 19:
+            if len(data_lst) == 12:
                 print(str(id_num) + " " + " data: \n" + data_str)
                 local_file.write(data_str)
                 local_file.flush()
@@ -118,6 +103,7 @@ def interprate_vaisala_string(ser, log_file, id_num):
                and remote files and save them
             """
     print("Closing open serial ports and files")
+    print(data)
     local_file.close()
     raw_data.close()
     ser.close()
@@ -139,6 +125,7 @@ def interprate_vaisala_string(ser, log_file, id_num):
     exit()                 
 
 
+
 def main():
     """open daemons based on number of vaisala's found"""
     global infile, stop_event
@@ -156,7 +143,14 @@ def main():
     infile = infile2
     stop_event = threading.Event()
     """above processes infile and handles missing lines"""
-    loc_nat, loc_sue = (infile[0], infile[1])
+    try:
+        vaisala = list(list_ports.grep("Vaisala*"))
+    except StopIteration:
+        print ("No device found")
+    loc_sue = vaisala[0][0]
+    loc_nat = infile[0]
+    print("Main Vaisala COM port is", loc_sue)
+    print("Manual COM port manually set for second Vaisala is",loc_nat)
     if (loc_nat != "" and loc_sue != ""):
         print("Both Vaisalas connected")
         """define first raeading thread"""
@@ -180,7 +174,7 @@ def main():
         t1.start()
         t2.start()
     elif (loc_nat != "" and loc_sue == ""):
-        print("75_sus not connected log for only 76_nat only")
+        print("Natasha connected only! The COM port is defined manually.")
 
         def vais1():
             ser1 = serial.Serial(loc_nat, baudrate=19200, timeout=1)
@@ -191,7 +185,7 @@ def main():
         t1.setDaemon(True)
         t1.start()
     elif (loc_nat == "" and loc_sue != ""):
-        print("76_nat not connected log for only 75_sus only")
+        print("This computer should be connected to instrument #75. The Vaisala that goes with it  should show 7575 in the last string")
 
         def vais1():
             ser1 = serial.Serial(loc_sue, baudrate=19200, timeout=1)
@@ -212,7 +206,7 @@ def stop():
 
 
 if __name__ == "__main__":
-    print("Please unsure you exit the reader using the stop() function." +
+    print("Please ensure you exit the reader using the exit() function." +
           " This runs the post-processing required for the data to be read into EGI"
           )
     main()
