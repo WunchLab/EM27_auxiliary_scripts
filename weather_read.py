@@ -20,7 +20,7 @@ utc = pytz.timezone("utc")
 id_num="ptb110_clarity"
 out_dir = 'C:/Users/Administrator/Desktop/em-27_aux_scripts/weather/' #output directory for files J
 file_name = (out_dir + dt.date.today().strftime("%Y%m%d") + "_" + str(id_num)+ ".txt")
-header = ("UTCDate,UTCTime,Pout, P_raw_voltage,WSPD,Tout,RH, Rain, Cloud")
+header = ("UTCDate,UTCTime,Pout, P_raw_voltage,WSPD,Tout,RH, Rain, Cloud, Daylight")
 f=open(file_name, 'a')
 out_line = unicode(header) 
 f.write(out_line+ "\n")
@@ -76,10 +76,11 @@ while not leave_loop:
       WSPD=clar.Wind
       Rain=clar.RainCondition
       RH=clar.HumidityPercent
+      Light=clar.DayCondition
       pprint=round(P,2)
       vprint=round(V,4)
-      print(measurement_date+ "," +measurement_time+ ","+  str(pprint) + ","+ str(vprint)+ ","+ str(WSPD)+","+str(Tout)+","+str(RH)+","+str(Rain)+","+str(Cloud)+"\n")
-      string=measurement_date+ "," +measurement_time+ ","+  str(P)[1:-1][1:-1]+","+ str(V)+ ","+ str(WSPD)+","+str(Tout)+","+str(RH)+","+str(Rain)+","+str(Cloud)
+      print(measurement_date+ "," +measurement_time+ ","+  str(pprint) + ","+ str(vprint)+ ","+ str(WSPD)+","+str(Tout)+","+str(RH)+","+str(Rain)+","+str(Cloud)+","+str(Light)+"\n")
+      string=measurement_date+ "," +measurement_time+ ","+  str(P)[1:-1][1:-1]+","+ str(V)+ ","+ str(WSPD)+","+str(Tout)+","+str(RH)+","+str(Rain)+","+str(Cloud)+","+str(Light)
       #UTCDate=np.append(UTCDate, measurement_date)     
       #UTCTime=np.append(UTCTime, measurement_time)     
       #Pout=np.append(Pout, P)     
