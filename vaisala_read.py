@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jun  6 11:41:41 2017
-
 @author: sajjan
 """
 import serial
@@ -16,31 +15,19 @@ import pandas as pd
 utc = pytz.timezone("utc")
 from serial.tools import list_ports
 
-"""can be used to write to a differnt file whenever weather station reader is turned on
-
-
-def check_if_file_exists(base_name):
-    file_number = 0
-    for file in os.listdir():
-        if file == base_name + "_" + str(file_number).zfill(2) + ".txt":
-            file_number = file_number + 1
-            file_number = str(file_number).zfill(2)
-    return base_name + file_number
-"""
-
 
 def create_log_file(id_num=""):
-    global local_file, raw_data, header, base_name
-    out_dir = 'C:/Users/Administrator/Desktop/em-27_aux_scripts/76_met//' #output directory for files J
+    global local_file, header, base_name
+    out_dir = 'C:/Users/Administrator/Desktop/em-27_aux_scripts/vaisala//' #output directory for files J
     base_name = (out_dir + dt.date.today().strftime("%Y%m%d") + "_" + str(id_num)) #full base filename J
-    raw_data = open(base_name + "_raw_strings.txt", mode="a")
     header = ("UTCDate,UTCTime,WDIR,WSPD,Tout,RH,Pout,rainaccum,rainintensity,hailaccum,hailintensityd, ID" +"\n"
               )
     try:
         local_file_header = open(base_name + ".txt", mode="r").readlines()[0]
         local_file = open(base_name + ".txt", mode="a")
         return
-    except FileNotFoundError:
+    #except FileNotFoundError:
+    except IOError:
         local_file = open(base_name + ".txt", mode="a")
         local_file.write(header)
         local_file.flush()
@@ -52,13 +39,12 @@ def interprate_vaisala_string(ser, log_file, id_num):
     global stop_event, base_name
     while not stop_event.is_set():
         """this loop reads the data from the vaisala and assocaites it with its
-           correct postiion using data dict and fills in approiate nans
+           correct position using data dict and fills in approiate nans
            in data lst
         """
-        
+        create_log_file(id_num)
         data_lst = [np.nan] * 12
         x = str(ser.readline())[3:-3]
-        
 
         sentence = x[:-2].split(",")
         """these read from the serial port and remove the ''b' at the start of
@@ -66,11 +52,9 @@ def interprate_vaisala_string(ser, log_file, id_num):
         """
         measurement_datetime= dt.datetime.now(utc)
         if x != "":
-            raw_data.write(str(measurement_datetime) + "," + x[0:-2] + "\n")
-            raw_data.flush()
-        measurement_time = measurement_datetime.strftime("%H:%M:%S.%f")
-        measurement_date = measurement_datetime.strftime("%Y/%m/%d")
-        """assocaite a tme with the measurement"""
+               measurement_time = measurement_datetime.strftime("%H:%M:%S.%f")
+               measurement_date = measurement_datetime.strftime("%Y/%m/%d")
+        """associate a time with the measurement"""
         """key is used to find correct nans to rewrite using data dict"""
         data = [var[3:-1] for var in sentence[1:]]
         """removes units from end of varaibbles"""
@@ -91,11 +75,10 @@ def interprate_vaisala_string(ser, log_file, id_num):
             """if no data in string don't write to file
                and print something saying no data
             """
-        #if r2_ffill == [np.nan]*3:
-         #   continue
         else:
             if len(data_lst) == 12:
-                print(str(id_num) + " " + " data: \n" + data_str)
+                #print(str(id_num) + " " + " data: \n", data_str)
+                print(data_str)
                 local_file.write(data_str)
                 local_file.flush()
             continue
@@ -103,9 +86,7 @@ def interprate_vaisala_string(ser, log_file, id_num):
                and remote files and save them
             """
     print("Closing open serial ports and files")
-    print(data)
     local_file.close()
-    raw_data.close()
     ser.close()
     print("Interpolating and filling Tout, Pout and RH")
 
@@ -132,15 +113,6 @@ def main():
     infile = [l.rsplit() for l in open("vaisala_infile", mode="r").readlines()
               if l[0] != "#"
               ]
-    infile2 = []
-    for l in infile:
-        try:
-            infile2.append(l[0])
-        except KeyboardInterrupt:
-            raise
-        except:
-            infile2.append("")
-    infile = infile2
     stop_event = threading.Event()
     """above processes infile and handles missing lines"""
     try:
@@ -148,53 +120,15 @@ def main():
     except StopIteration:
         print ("No device found")
     loc_nat = vaisala[0][0]
-    loc_sue = infile[1]
-    print("Main Vaisala COM port is", loc_nat)
-    print("Manual COM port set for second Vaisala is",loc_sue)
-    if (loc_nat != "" and loc_sue != ""):
-        print("Both Vaisalas connected")
-        """define first raeading thread"""
+    loc_nat = loc_nat.encode('ascii','replace')
 
-        def vais1():
-            ser1 = serial.Serial(loc_nat, baudrate=19200, timeout=1)
-            id_num = "76_nat"
-            file1 = create_log_file(id_num)
-            interprate_vaisala_string(ser1, file1, id_num)
-        t1 = threading.Thread(target=vais1)
-        """define second raeading thread"""
+    print("Vaisala COM port is", loc_nat.decode('UTF-8'))
 
-        def vais2():
-            ser2 = serial.Serial(loc_sue, baudrate=19200, timeout=1)
-            id_num = "75_sus"
-            file2 = create_log_file(id_num)
-            interprate_vaisala_string(ser2, file2, id_num)
-        t2 = threading.Thread(target=vais2)
-        t1.setDaemon(True)
-        t2.setDaemon(True)
-        t1.start()
-        t2.start()
-    elif (loc_nat != "" and loc_sue == ""):
-        print("This computer should be connected to instrument #76. The Vaisala that goes with it  should show 7676 in the last string")
-
-        def vais1():
-            ser1 = serial.Serial(loc_nat, baudrate=19200, timeout=1)
-            id_num = "76_nat"
-            file1 = create_log_file(id_num)
-            interprate_vaisala_string(ser1, file1, id_num)
-        t1 = threading.Thread(target=vais1)
-        t1.setDaemon(True)
-        t1.start()
-    elif (loc_nat == "" and loc_sue != ""):
-        print("76_nat not connected log for only 75_sus only")
-
-        def vais1():
-            ser1 = serial.Serial(loc_sue, baudrate=19200, timeout=1)
-            id_num = "75_sus"
-            file1 = create_log_file(id_num)
-            interprate_vaisala_string(ser1, file1, id_num)
-        t1 = threading.Thread(target=vais1)
-        t1.setDaemon(True)
-        t1.start()
+    if (loc_nat != ""):
+        ser1 = serial.Serial(loc_nat.decode('UTF-8'), baudrate=19200, timeout=1)
+        id_num = "vaisala"
+        file1 = create_log_file(id_num)
+        interprate_vaisala_string(ser1, file1, id_num)
     else:
         print("No Vaisalas are connected")
         return
