@@ -1,3 +1,7 @@
+#Author Nasrin Mostafavi Pak
+#This code reads the strings from the clarity cloud sensor and ptb110, combines them and writes them into one single file.
+#This code is used with the Downsview EM27/SUN setup.
+#Robodome uses the clarity data to open and close.
 
 
 from mcculw import ul
